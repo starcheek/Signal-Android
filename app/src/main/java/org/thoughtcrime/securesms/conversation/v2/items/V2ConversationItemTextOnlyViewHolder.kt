@@ -8,7 +8,9 @@ package org.thoughtcrime.securesms.conversation.v2.items
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.Typeface
+import android.speech.tts.TextToSpeech
 import android.text.Spannable
+import android.text.SpannableString
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.TextPaint
@@ -26,8 +28,12 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import org.json.JSONObject
 import org.signal.core.util.StringUtil
 import org.signal.core.util.dp
+import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.components.mention.MentionAnnotation
 import org.thoughtcrime.securesms.conversation.BodyBubbleLayoutTransition
@@ -69,7 +75,9 @@ import java.util.Locale
 open class V2ConversationItemTextOnlyViewHolder<Model : MappingModel<Model>>(
   private val binding: V2ConversationItemTextOnlyBindingBridge,
   private val conversationContext: V2ConversationContext,
-  footerDelegate: V2FooterPositionDelegate = V2FooterPositionDelegate(binding)
+  footerDelegate: V2FooterPositionDelegate = V2FooterPositionDelegate(binding),
+  private val action: suspend (String, Int) -> String,
+  private val coroutineScope: CoroutineScope
 ) : V2ConversationItemViewHolder<Model>(binding.root, conversationContext), Multiselectable, InteractiveConversationElement, Observer<Recipient> {
 
   companion object {
@@ -155,6 +163,19 @@ open class V2ConversationItemTextOnlyViewHolder<Model : MappingModel<Model>>(
         conversationContext.clickListener.onItemClick(getMultiselectPartForLatestTouch())
       }
     }
+    binding.speakButton?.setOnClickListener {
+      val message = conversationMessage.messageRecord.body
+      coroutineScope.launch {
+        action(message, 0)
+      }
+    }
+
+    binding.translateButton?.setOnClickListener {
+      Log.d("Translate", "Translate button clicked for message: ${conversationMessage.messageRecord.id}")
+      conversationContext.clickListener.onTranslateClicked(conversationMessage)
+    }
+
+
     binding.body.setOnLongClickListener(passthroughClickListener)
     binding.root.setOnClickListener {
       if (conversationContext.selectedItems.isEmpty()) {
@@ -175,6 +196,7 @@ open class V2ConversationItemTextOnlyViewHolder<Model : MappingModel<Model>>(
 
     if (binding.isIncoming) {
       binding.body.setMentionBackgroundTint(ContextCompat.getColor(context, if (ThemeUtil.isDarkTheme(context)) R.color.core_grey_60 else R.color.core_grey_20))
+
     } else {
       binding.body.setMentionBackgroundTint(ContextCompat.getColor(context, R.color.transparent_black_25))
     }
@@ -409,12 +431,32 @@ open class V2ConversationItemTextOnlyViewHolder<Model : MappingModel<Model>>(
     binding.body.setLinkTextColor(themeDelegate.getBodyTextColor(conversationMessage))
 
     val record = conversationMessage.messageRecord
-    var styledText: Spannable = conversationMessage.getDisplayBody(context)
+    var rawText = conversationMessage.getDisplayBody(context).toString()
+
+    // Try to extract original if it's our JSON structure
+    try {
+      val obj = JSONObject(rawText)
+      if (obj.has("random_string") && obj.getString("random_string") == "lshdflkshdfbiu689o3457y") {
+        rawText = obj.optString("translated", rawText)
+        Log.d("Translate", "Showing original from JSON: $rawText")
+      }
+    } catch (e: Exception) {
+      Log.d("Translate", "Not JSON: $rawText")
+    }
+
+    var styledText: Spannable = SpannableString(rawText)
     if (conversationContext.isMessageRequestAccepted) {
       linkifyMessageBody(styledText)
     }
 
-    styledText = SearchUtil.getHighlightedSpan(Locale.getDefault(), STYLE_FACTORY, styledText, conversationContext.searchQuery, SearchUtil.MATCH_ALL)
+    styledText = SearchUtil.getHighlightedSpan(
+      Locale.getDefault(),
+      STYLE_FACTORY,
+      styledText,
+      conversationContext.searchQuery,
+      SearchUtil.MATCH_ALL
+    )
+
     if (record.hasExtraText()) {
       binding.body.setOverflowText(getLongMessageSpan())
     } else {
@@ -432,6 +474,7 @@ open class V2ConversationItemTextOnlyViewHolder<Model : MappingModel<Model>>(
     binding.body.visible = bodyText.isNotEmpty()
     binding.body.text = bodyText
   }
+
 
   private fun linkifyMessageBody(messageBody: Spannable) {
     V2ConversationItemUtils.linkifyUrlLinks(messageBody, conversationContext.selectedItems.isEmpty(), conversationContext.clickListener::onUrlClicked)
@@ -782,15 +825,19 @@ open class V2ConversationItemTextOnlyViewHolder<Model : MappingModel<Model>>(
       conversationContext.selectedItems.isNotEmpty() -> {
         conversationContext.clickListener.onItemClick(getMultiselectPartForLatestTouch())
       }
+
       messageRecord.isFailed -> {
         conversationContext.clickListener.onMessageWithErrorClicked(messageRecord)
       }
+
       messageRecord.isRateLimited && SignalStore.rateLimit.needsRecaptcha() -> {
         conversationContext.clickListener.onMessageWithRecaptchaNeededClicked(messageRecord)
       }
+
       messageRecord.isOutgoing && messageRecord.isIdentityMismatchFailure -> {
         conversationContext.clickListener.onIncomingIdentityMismatchClicked(messageRecord.fromRecipient.id)
       }
+
       else -> {
         conversationContext.clickListener.onItemClick(getMultiselectPartForLatestTouch())
       }

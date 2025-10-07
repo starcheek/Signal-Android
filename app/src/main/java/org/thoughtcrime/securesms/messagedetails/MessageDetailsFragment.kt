@@ -211,6 +211,10 @@ class MessageDetailsFragment : FullScreenDialogFragment(), MessageDetailsAdapter
     Log.w(TAG, "Not yet implemented!", Exception())
   }
 
+  override fun onTranslateClicked(conversationMessage: ConversationMessage) {
+    Log.w(TAG, "Not yet implemented!", Exception())
+  }
+
   override fun onGroupMemberClicked(recipientId: RecipientId, groupId: GroupId) {
     Log.w(TAG, "Not yet implemented!", Exception())
   }

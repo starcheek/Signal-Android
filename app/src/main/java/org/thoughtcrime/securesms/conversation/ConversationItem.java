@@ -73,7 +73,6 @@ import org.signal.core.util.BidiUtil;
 import org.signal.core.util.DimensionUnit;
 import org.signal.core.util.StringUtil;
 import org.signal.core.util.logging.Log;
-import org.signal.ringrtc.CallLinkRootKey;
 import org.thoughtcrime.securesms.BindableConversationItem;
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.attachments.Attachment;
@@ -203,6 +202,7 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
 
   private           ConversationItemBodyBubble bodyBubble;
   private           View                       reply;
+  private           View                       translateButton;
   private           View                       replyIcon;
   @Nullable private ViewGroup                  contactPhotoHolder;
   @Nullable private QuoteView                  quoteView;
@@ -344,6 +344,7 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
     this.quoteView                 = findViewById(R.id.quote_view);
     this.reply                     = findViewById(R.id.reply_icon_wrapper);
     this.replyIcon                 = findViewById(R.id.reply_icon);
+    this.translateButton           = findViewById(R.id.translate_button);
     this.reactionsView             = findViewById(R.id.reactions_view);
     this.badgeImageView            = findViewById(R.id.badge);
     this.storyReactionLabelWrapper = findViewById(R.id.story_reacted_label_holder);
@@ -2422,7 +2423,12 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
         passthroughClickListener.onClick(sharedContactStub.get());
       }
     }
+
+    @Override public void onTranslateClicked(@NonNull ConversationMessage conversationMessage) {
+      if ( eventListener != null) eventListener.onTranslateClicked(conversationMessage);
+    }
   }
+
 
   private class SharedContactClickListener implements View.OnClickListener {
     @Override

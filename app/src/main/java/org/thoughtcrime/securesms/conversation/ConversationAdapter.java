@@ -827,5 +827,6 @@ public class ConversationAdapter
   public interface ItemClickListener extends BindableConversationItem.EventListener {
     void onItemClick(MultiselectPart item);
     void onItemLongClick(View itemView, MultiselectPart item);
+    void onTranslateClicked(@NonNull ConversationMessage conversationMessage);
   }
 }

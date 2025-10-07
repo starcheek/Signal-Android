@@ -69,6 +69,7 @@ import org.thoughtcrime.securesms.components.settings.conversation.preferences.U
 import org.thoughtcrime.securesms.contacts.ContactSelectionDisplayMode
 import org.thoughtcrime.securesms.conversation.ConversationIntents
 import org.thoughtcrime.securesms.database.AttachmentTable
+import org.thoughtcrime.securesms.database.SignalDatabase
 import org.thoughtcrime.securesms.groups.GroupId
 import org.thoughtcrime.securesms.groups.ui.GroupErrors
 import org.thoughtcrime.securesms.groups.ui.GroupLimitDialog
@@ -574,8 +575,32 @@ class ConversationSettingsFragment : DSLSettingsFragment(
           }
         )
       }
+      if (!state.recipient.isSelf && !state.recipient.isReleaseNotes) {
+        clickPref(
+          title = DSLSettingsText.from("Translation Language"),
+          icon = DSLSettingsIcon.from(R.drawable.ic_translate),
+          summary = DSLSettingsText.from(SignalDatabase.recipients.getTranslationLanguage(state.recipient.id) ?: "None"),
+          isEnabled = true,
+          onClick = {
+            val languages = arrayOf("France", "Canadian", "English")
+            val languagesCodes = arrayOf("fr", "en-CA", "en")
+            val current = SignalDatabase.recipients.getTranslationLanguage(state.recipient.id)
+            val checkedItem = languages.indexOf(current)
+            MaterialAlertDialogBuilder(requireContext())
+              .setTitle("Change translation language to:")
+              .setSingleChoiceItems(languages, checkedItem) { dialog, which ->
+                SignalDatabase.recipients.setTranslationLanguage(state.recipient.id, languagesCodes[which])
+                dialog.dismiss()
+              }
+              .setNegativeButton(android.R.string.cancel) { dialog, _ -> dialog.dismiss() }
+              .show()
+          }
+        )
+      }
+
 
       state.withRecipientSettingsState { recipientState ->
+
         when (recipientState.contactLinkState) {
           ContactLinkState.OPEN -> {
             @Suppress("DEPRECATION")

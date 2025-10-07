@@ -6,18 +6,25 @@
 package org.thoughtcrime.securesms.conversation.v2
 
 import android.content.Context
+import android.speech.tts.TextToSpeech
 import android.text.TextUtils
 import android.view.GestureDetector
 import android.view.GestureDetector.SimpleOnGestureListener
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.core.view.children
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.RequestManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONObject
 import org.signal.core.util.logging.Log
 import org.signal.core.util.toOptional
 import org.thoughtcrime.securesms.BindableConversationItem
@@ -64,10 +71,13 @@ import org.thoughtcrime.securesms.util.ProjectionList
 import org.thoughtcrime.securesms.util.SignalE164Util
 import org.thoughtcrime.securesms.util.adapter.mapping.MappingViewHolder
 import org.thoughtcrime.securesms.util.adapter.mapping.PagingMappingAdapter
+import java.io.OutputStreamWriter
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.Locale
 import java.util.Optional
 
-class ConversationAdapterV2(
+class ConversationAdapterV2 constructor(
   override val lifecycleOwner: LifecycleOwner,
   override val requestManager: RequestManager,
   override val clickListener: ItemClickListener,
@@ -102,7 +112,14 @@ class ConversationAdapterV2(
 
   private val onScrollStateChangedListener = OnScrollStateChangedListener()
 
+  // TextToSpeech instance
+  private var textToSpeech: TextToSpeech? = null
+  private var translationLanguage =Locale.FRENCH
+
+
   init {
+    // Initialize TTS once with the provided context
+
     registerFactory(ThreadHeader::class.java, ::ThreadHeaderViewHolder, R.layout.conversation_item_thread_header)
 
     registerFactory(ConversationUpdate::class.java) { parent ->
@@ -113,12 +130,12 @@ class ConversationAdapterV2(
     if (SignalStore.internal.useConversationItemV2Media) {
       registerFactory(OutgoingMedia::class.java) { parent ->
         val view = CachedInflater.from(parent.context).inflate<View>(R.layout.v2_conversation_item_media_outgoing, parent, false)
-        V2ConversationItemMediaViewHolder(V2ConversationItemMediaOutgoingBinding.bind(view).bridge(), this)
+        V2ConversationItemMediaViewHolder(V2ConversationItemMediaOutgoingBinding.bind(view).bridge(), this, action = this::performAction, coroutineScope = lifecycleOwner.lifecycleScope)
       }
 
       registerFactory(IncomingMedia::class.java) { parent ->
         val view = CachedInflater.from(parent.context).inflate<View>(R.layout.v2_conversation_item_media_incoming, parent, false)
-        V2ConversationItemMediaViewHolder(V2ConversationItemMediaIncomingBinding.bind(view).bridge(), this)
+        V2ConversationItemMediaViewHolder(V2ConversationItemMediaIncomingBinding.bind(view).bridge(), this, action = this::performAction, coroutineScope = lifecycleOwner.lifecycleScope)
       }
     } else {
       registerFactory(OutgoingMedia::class.java) { parent ->
@@ -134,17 +151,82 @@ class ConversationAdapterV2(
 
     registerFactory(OutgoingTextOnly::class.java) { parent ->
       val view = CachedInflater.from(parent.context).inflate<View>(R.layout.v2_conversation_item_text_only_outgoing, parent, false)
-      V2ConversationItemTextOnlyViewHolder(V2ConversationItemTextOnlyOutgoingBinding.bind(view).bridge(), this)
+      V2ConversationItemTextOnlyViewHolder(V2ConversationItemTextOnlyOutgoingBinding.bind(view).bridge(), this, action = this::performAction, coroutineScope = lifecycleOwner.lifecycleScope)
     }
 
     registerFactory(IncomingTextOnly::class.java) { parent ->
       val view = CachedInflater.from(parent.context).inflate<View>(R.layout.v2_conversation_item_text_only_incoming, parent, false)
-      V2ConversationItemTextOnlyViewHolder(V2ConversationItemTextOnlyIncomingBinding.bind(view).bridge(), this)
+      V2ConversationItemTextOnlyViewHolder(V2ConversationItemTextOnlyIncomingBinding.bind(view).bridge(), this, action = this::performAction, coroutineScope = lifecycleOwner.lifecycleScope)
     }
   }
 
+
+  // Your provided function signature
+  suspend fun performAction(text: String, action: Int): String = withContext(Dispatchers.IO) {
+
+    if (action == 0) {
+      speakIncomingMessage(text)
+    }
+    return@withContext text
+  }
+
+
+  private fun initializeTextToSpeech(context: Context) {
+    Log.d(TAG, "Initializing TextToSpeech")
+    // Use ttsContext instead of adapterContext
+    textToSpeech = TextToSpeech(context) { status ->
+      if (status == TextToSpeech.SUCCESS) {
+        textToSpeech?.language = Locale.FRENCH
+        val frenchVoice = textToSpeech?.voices?.firstOrNull { it.name.contains("fr-FR") }
+        if (frenchVoice != null) {
+          textToSpeech?.voice = frenchVoice
+        }
+        textToSpeech?.setSpeechRate(1f)
+      }
+    }
+  }
+
+  private fun speakIncomingMessage(text: String?) {
+    Log.d(TAG, "speakIncomingMessage called with text: $text")
+
+    if (text.isNullOrBlank()) return
+
+    var messageToSpeak = text
+    try {
+      // Try to parse JSON
+      val obj = JSONObject(text)
+      if (obj.has("random_string") && obj.getString("random_string") == "lshdflkshdfbiu689o3457y") {
+        messageToSpeak = obj.optString("original", text)
+        Log.d(TAG, "Extracted original message from JSON: $messageToSpeak")
+      }
+    } catch (e: Exception) {
+      Log.d(TAG, "Not a JSON translation message, using raw text")
+    }
+
+    val commaSeparatedText = messageToSpeak
+      ?.split("\\s+".toRegex())
+      ?.joinToString(" ") { word ->
+        if (word.lastOrNull()?.isLetterOrDigit() == true) "$word," else word
+      }
+
+    Log.d(TAG, "Speaking modified message: $commaSeparatedText")
+    textToSpeech?.speak(commaSeparatedText, TextToSpeech.QUEUE_ADD, null, null)
+  }
+  fun setTranslationLanguage(lang: String?,context: Context) {
+    Log.d(TAG, "setTranslationLanguage called with lang: $lang")
+    if (lang.isNullOrBlank()) return
+    val locale = Locale(lang)
+    if (locale == translationLanguage) return
+    textToSpeech?.shutdown()
+    translationLanguage = locale
+    initializeTextToSpeech(context)
+  }
+
+
+
   override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
     super.onAttachedToRecyclerView(recyclerView)
+    initializeTextToSpeech(recyclerView.context)
 
     for ((model, type) in itemTypes) {
       val count: Int = when (model) {
@@ -166,6 +248,7 @@ class ConversationAdapterV2(
     recyclerView.addOnScrollListener(onScrollStateChangedListener)
   }
 
+
   override fun onViewRecycled(holder: MappingViewHolder<*>) {
     if (holder is ConversationViewHolder) {
       holder.bindable.unbind()
@@ -180,6 +263,8 @@ class ConversationAdapterV2(
       .forEach { it.unbind() }
 
     recyclerView.removeOnScrollListener(onScrollStateChangedListener)
+    textToSpeech?.shutdown()
+    textToSpeech = null
   }
 
   override val displayMode: ConversationItemDisplayMode
@@ -306,7 +391,9 @@ class ConversationAdapterV2(
   }
 
   fun toggleSelection(multiselectPart: MultiselectPart) {
-    if (multiselectPart.getMessageRecord().isInMemoryMessageRecord) { return }
+    if (multiselectPart.getMessageRecord().isInMemoryMessageRecord) {
+      return
+    }
 
     if (multiselectPart in _selected) {
       _selected.remove(multiselectPart)
@@ -392,6 +479,42 @@ class ConversationAdapterV2(
 
   private inner class IncomingMediaViewHolder(itemView: View) : ConversationViewHolder<IncomingMedia>(itemView) {
     override fun bind(model: IncomingMedia) {
+      bindable.setEventListener(clickListener)
+
+      if (bindPayloadsIfAvailable()) {
+        return
+      }
+
+
+      bindable.bind(
+        lifecycleOwner,
+        model.conversationMessage,
+        previousMessage,
+        nextMessage,
+        requestManager,
+        Locale.getDefault(),
+        _selected,
+        model.conversationMessage.threadRecipient,
+        searchQuery,
+        false,
+        hasWallpaper && displayMode.displayWallpaper(),
+        isMessageRequestAccepted,
+        model.conversationMessage == inlineContent,
+        colorizer,
+        displayMode
+      )
+    }
+  }
+
+  // Patch V2ConversationItemTextOnlyViewHolder to speak incoming text messages
+  // This is only for incoming text messages, so we check in the bind method
+  // We need to override the bind method for incoming text only
+  // Since V2ConversationItemTextOnlyViewHolder is not defined here, we use a mapping adapter callback
+  // So, we add a custom ViewHolder for incoming text only messages
+
+  // Add this after IncomingMediaViewHolder
+  private inner class IncomingTextOnlyViewHolder(itemView: View) : ConversationViewHolder<IncomingTextOnly>(itemView) {
+    override fun bind(model: IncomingTextOnly) {
       bindable.setEventListener(clickListener)
 
       if (bindPayloadsIfAvailable()) {
@@ -544,9 +667,11 @@ class ConversationAdapterV2(
         AvatarDownloadStateCache.DownloadState.FINISHED -> {
           conversationBanner.setAvatar(requestManager, recipient)
         }
+
         AvatarDownloadStateCache.DownloadState.IN_PROGRESS -> {
           conversationBanner.showProgressBar(recipient)
         }
+
         AvatarDownloadStateCache.DownloadState.FAILED -> {
           conversationBanner.showFailedAvatarDownload(recipient)
         }

@@ -751,6 +751,8 @@ open class MessageTable(context: Context?, databaseHelper: SignalDatabase) : Dat
     )
   }
 
+
+
   fun updateBundleMessageBody(messageId: Long, body: String): InsertResult {
     val type = MessageTypes.BASE_INBOX_TYPE or MessageTypes.SECURE_MESSAGE_BIT or MessageTypes.PUSH_MESSAGE_BIT
     return updateMessageBodyAndType(messageId, body, MessageTypes.TOTAL_MASK, type)
@@ -2702,6 +2704,9 @@ open class MessageTable(context: Context?, databaseHelper: SignalDatabase) : Dat
       }
     } ?: throw NoSuchMessageException("No record found for id: $messageId")
   }
+
+  fun updateMessageBody(messageId: Long, body: String): InsertResult =
+    updateMessageBodyAndType(messageId, body, maskOff = 0, maskOn = 0)
 
   @JvmOverloads
   @Throws(MmsException::class)

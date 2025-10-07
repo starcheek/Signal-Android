@@ -7,6 +7,7 @@ package org.thoughtcrime.securesms.conversation.v2.items
 
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
 import android.widget.Space
 import android.widget.TextView
 import com.google.android.material.imageview.ShapeableImageView
@@ -41,7 +42,9 @@ data class V2ConversationItemTextOnlyBindingBridge(
   val footerBackground: View,
   val footerSpace: Space?,
   val alert: AlertView?,
-  val isIncoming: Boolean
+  val isIncoming: Boolean,
+  val speakButton: ImageButton?,
+  val translateButton: ImageButton?
 )
 
 /**
@@ -63,7 +66,9 @@ fun V2ConversationItemTextOnlyIncomingBinding.bridge(): V2ConversationItemTextOn
     footerBackground = conversationItemFooterBackground,
     alert = null,
     footerSpace = footerEndPad,
-    isIncoming = true
+    isIncoming = true,
+    speakButton = ttsSpeakButton,
+    translateButton = translateButton
   )
 }
 
@@ -86,6 +91,8 @@ fun V2ConversationItemTextOnlyOutgoingBinding.bridge(): V2ConversationItemTextOn
     footerBackground = conversationItemFooterBackground,
     alert = conversationItemAlert,
     footerSpace = footerEndPad,
-    isIncoming = false
+    isIncoming = false,
+    speakButton = null,
+    translateButton = null
   )
 }

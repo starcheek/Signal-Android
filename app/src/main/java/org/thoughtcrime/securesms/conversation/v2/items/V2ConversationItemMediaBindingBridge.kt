@@ -43,7 +43,9 @@ fun V2ConversationItemMediaIncomingBinding.bridge(): V2ConversationItemMediaBind
     footerBackground = conversationItemFooterBackground,
     alert = null,
     footerSpace = null,
-    isIncoming = true
+    isIncoming = true,
+    speakButton = ttsSpeakButton,
+    translateButton = translateButton
   )
 
   return V2ConversationItemMediaBindingBridge(
@@ -73,7 +75,9 @@ fun V2ConversationItemMediaOutgoingBinding.bridge(): V2ConversationItemMediaBind
     footerBackground = conversationItemFooterBackground,
     alert = conversationItemAlert,
     footerSpace = footerEndPad,
-    isIncoming = false
+    isIncoming = false,
+    speakButton = null,
+    translateButton = null
   )
 
   return V2ConversationItemMediaBindingBridge(

@@ -276,6 +276,14 @@ class ConversationRepository(
       SignalDatabase.messages.getMessagePositionInConversation(threadId, dateReceived, authorId)
     }.subscribeOn(Schedulers.io())
   }
+  fun getTranslationLanguage(recipientId: RecipientId): String? {
+  return  SignalDatabase.recipients.getTranslationLanguage(recipientId)
+  }
+  fun setTranslationLanguage(recipientId: RecipientId, language: String?) {
+    SignalExecutors.BOUNDED_IO.execute {
+      SignalDatabase.recipients.setTranslationLanguage(recipientId, language)
+    }
+  }
 
   fun getMessageCounts(threadId: Long): Flowable<MessageCounts> {
     return RxDatabaseObserver.conversation(threadId)

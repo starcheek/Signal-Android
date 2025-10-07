@@ -104,6 +104,10 @@ class InternalConversationTestFragment : Fragment(R.layout.conversation_test_fra
   }
 
   private inner class ClickListener : ItemClickListener {
+
+    override fun onTranslateClicked(conversationMessage: ConversationMessage) {
+      Toast.makeText(requireContext(), "Can't touch this.", Toast.LENGTH_SHORT).show()
+    }
     override fun onQuoteClicked(messageRecord: MmsMessageRecord?) {
       Toast.makeText(requireContext(), "Can't touch this.", Toast.LENGTH_SHORT).show()
     }

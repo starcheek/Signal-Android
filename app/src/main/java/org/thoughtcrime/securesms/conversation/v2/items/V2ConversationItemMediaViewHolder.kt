@@ -7,6 +7,7 @@ package org.thoughtcrime.securesms.conversation.v2.items
 
 import android.util.TypedValue
 import android.view.View
+import kotlinx.coroutines.CoroutineScope
 import org.thoughtcrime.securesms.components.QuoteView
 import org.thoughtcrime.securesms.conversation.v2.data.ConversationMessageElement
 import org.thoughtcrime.securesms.database.model.MmsMessageRecord
@@ -20,13 +21,18 @@ import org.thoughtcrime.securesms.util.visible
 /**
  * Represents a media-backed conversation item.
  */
-class V2ConversationItemMediaViewHolder<Model : MappingModel<Model>>(
+class V2ConversationItemMediaViewHolder<Model : MappingModel<Model>> constructor(
   private val binding: V2ConversationItemMediaBindingBridge,
-  private val conversationContext: V2ConversationContext
+  private val conversationContext: V2ConversationContext,
+  private val action: suspend (String, Int) -> String,
+  private val coroutineScope: CoroutineScope
+
 ) : V2ConversationItemTextOnlyViewHolder<Model>(
   binding.textBridge,
   conversationContext,
-  V2FooterPositionDelegate(binding)
+  V2FooterPositionDelegate(binding),
+  action,
+  coroutineScope
 ) {
 
   init {

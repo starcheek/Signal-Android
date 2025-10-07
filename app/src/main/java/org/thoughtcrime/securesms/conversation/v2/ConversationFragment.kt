@@ -89,9 +89,11 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
+import org.json.JSONObject
 import org.signal.core.util.ByteLimitInputFilter
 import org.signal.core.util.PendingIntentFlags
 import org.signal.core.util.Result
@@ -214,6 +216,7 @@ import org.thoughtcrime.securesms.conversation.v2.items.InteractiveConversationE
 import org.thoughtcrime.securesms.conversation.v2.keyboard.AttachmentKeyboardFragment
 import org.thoughtcrime.securesms.database.AttachmentTable
 import org.thoughtcrime.securesms.database.DraftTable
+import org.thoughtcrime.securesms.database.SignalDatabase
 import org.thoughtcrime.securesms.database.model.IdentityRecord
 import org.thoughtcrime.securesms.database.model.InMemoryMessageRecord
 import org.thoughtcrime.securesms.database.model.Mention
@@ -257,7 +260,6 @@ import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.linkpreview.LinkPreview
 import org.thoughtcrime.securesms.linkpreview.LinkPreviewViewModelV2
 import org.thoughtcrime.securesms.longmessage.LongMessageFragment
-import org.thoughtcrime.securesms.main.InsetsViewModel
 import org.thoughtcrime.securesms.main.MainNavigationListLocation
 import org.thoughtcrime.securesms.mediaoverview.MediaOverviewActivity
 import org.thoughtcrime.securesms.mediapreview.MediaIntentFactory
@@ -350,8 +352,10 @@ import org.thoughtcrime.securesms.util.visible
 import org.thoughtcrime.securesms.verify.VerifyIdentityActivity
 import org.thoughtcrime.securesms.wallpaper.ChatWallpaper
 import org.thoughtcrime.securesms.wallpaper.ChatWallpaperDimLevelUtil
-import org.thoughtcrime.securesms.window.WindowSizeClass
 import org.thoughtcrime.securesms.window.WindowSizeClass.Companion.getWindowSizeClass
+import java.io.OutputStreamWriter
+import java.net.HttpURLConnection
+import java.net.URL
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -485,8 +489,6 @@ class ConversationFragment :
 
   private val shareDataTimestampViewModel: ShareDataTimestampViewModel by activityViewModels()
 
-  private val insetsViewModel: InsetsViewModel by activityViewModels()
-
   private val inlineQueryController: InlineQueryResultsControllerV2 by lazy {
     InlineQueryResultsControllerV2(
       this,
@@ -599,21 +601,7 @@ class ConversationFragment :
   override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
     binding.toolbar.isBackInvokedCallbackEnabled = false
 
-    if (WindowSizeClass.isLargeScreenSupportEnabled()) {
-      viewLifecycleOwner.lifecycleScope.launch {
-        repeatOnLifecycle(Lifecycle.State.RESUMED) {
-          binding.root.clearVerticalInsetOverride()
-          if (!resources.getWindowSizeClass().isSplitPane()) {
-            insetsViewModel.insets.collect {
-              binding.root.applyInsets(it)
-            }
-          }
-        }
-      }
-    }
-
-    binding.root.setApplyRootInsets(!WindowSizeClass.isLargeScreenSupportEnabled())
-    binding.root.setUseWindowTypes(!WindowSizeClass.isLargeScreenSupportEnabled())
+    binding.root.setUseWindowTypes(!resources.getWindowSizeClass().isSplitPane())
 
     disposables.bindTo(viewLifecycleOwner)
 
@@ -1347,19 +1335,19 @@ class ConversationFragment :
     } else {
       val mimeType = MediaUtil.getMimeType(requireContext(), uri) ?: mediaType.toFallbackMimeType()
       val media = Media(
-        uri = uri,
-        contentType = mimeType,
-        date = 0,
-        width = width,
-        height = height,
-        size = 0,
-        duration = 0,
-        isBorderless = borderless,
-        isVideoGif = videoGif,
-        bucketId = null,
-        caption = null,
-        transformProperties = AttachmentTable.TransformProperties.forSentMediaQuality(SignalStore.settings.sentMediaQuality.code),
-        fileName = null
+        uri,
+        mimeType,
+        0,
+        width,
+        height,
+        0,
+        0,
+        borderless,
+        videoGif,
+        null,
+        null,
+        AttachmentTable.TransformProperties.forSentMediaQuality(SignalStore.settings.sentMediaQuality.code),
+        null
       )
       conversationActivityResultContracts.launchMediaEditor(listOf(media), recipientId, composeText.textTrimmed)
     }
@@ -1671,6 +1659,8 @@ class ConversationFragment :
       return
     }
 
+
+
     val editMessage = inputPanel.editMessage
     if (editMessage == null) {
       Log.w(TAG, "No edit message found, forcing exit")
@@ -1717,6 +1707,7 @@ class ConversationFragment :
       chatColorsDataProvider = viewModel::chatColorsSnapshot,
       displayDialogFragment = { it.show(childFragmentManager, null) }
     )
+    adapter.setTranslationLanguage(viewModel.getRecipientTranslationLanguage(),requireContext())
 
     typingIndicatorAdapter = ConversationTypingIndicatorAdapter(Glide.with(this))
 
@@ -2809,6 +2800,136 @@ class ConversationFragment :
   // region Conversation Callbacks
 
   private inner class ConversationItemClickListener : ConversationAdapter.ItemClickListener {
+
+    override fun onTranslateClicked(conversationMessage: ConversationMessage) {
+      val openAiKey = ""
+      val url = URL("https://api.openai.com/v1/responses")
+      val prompt = """
+      You are a bilingual assistant for French learners.
+      Task: Translate a given French sentence into English word-by-word,
+      keeping the French word order, and aligning the output in two rows:
+      - First row: French words separated by a space.
+      - Second row: Corresponding English words, padded with spaces so that they line up under their French counterpart.
+      Rules:
+      - Keep punctuation and numbers in place.
+      - Use the most common, literal meaning of each French word in the given context.
+      - Do not re-order the words to make English grammar correct.
+      - Try to keep each French-English pair vertically aligned for readability.
+      - each line should have the same number of words (max 3 words)
+      
+      Example input:
+      Je pense faire la tarte à la rhubarbe.
+      
+      Example Output:
+      [Je] [pense] [faire] 
+      [I ] [think] [to do] 
+
+      [la ] [tarte] [à]
+      [the] [ pie ] [to]
+     
+      [la ] [rhubarbe]
+      [the] [rhubarb ].
+
+      Input:
+      ${conversationMessage.messageRecord.body}
+      ""
+    """.trimIndent()
+
+      val payload = JSONObject().apply {
+        put("model", "gpt-4o-mini")
+        put("input", prompt)
+        put("store", true)
+      }
+
+      lifecycleScope.launch {
+        try {
+          val aligned: String = withContext(Dispatchers.IO) {
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+              requestMethod = "POST"
+              setRequestProperty("Authorization", "Bearer $openAiKey")
+              setRequestProperty("Content-Type", "application/json")
+              doOutput = true
+            }
+
+            OutputStreamWriter(conn.outputStream, Charsets.UTF_8).use {
+              it.write(payload.toString())
+            }
+
+            val response = conn.inputStream.bufferedReader().use { it.readText() }
+            val outputText = JSONObject(response)
+              .getJSONArray("output")
+              .getJSONObject(0)
+              .getJSONArray("content")
+              .getJSONObject(0)
+              .getString("text")
+
+            Log.d("Translation", "✅ Translation received: $outputText")
+            outputText
+          }
+
+          val safeAligned = try {
+            align(aligned)
+          } catch (e: Exception) {
+            Log.w("Translation", "⚠️ Align failed, falling back to raw text", e)
+            aligned
+          }
+
+          // JSON build
+          val jsonToSave = JSONObject().apply {
+            put("random_string", "lshdflkshdfbiu689o3457y") // fixed
+            put("original", conversationMessage.messageRecord!!.body)
+            put("translated", safeAligned)
+          }.toString()
+
+          Log.d("Translation", "✅ JSON built: $jsonToSave")
+
+          SignalDatabase.messages.updateMessageBody(
+            conversationMessage.messageRecord!!.id,
+            jsonToSave
+          )
+
+        } catch (e: Exception) {
+          Log.e("Translation", "❌ Translation failed: ${e.message}", e)
+        }
+      }
+    }
+
+
+    fun align(translation: String): String {
+      val lines = translation.trim().lines()
+        .map { Regex("""\[(.*?)]""").findAll(it).map { m -> m.groupValues[1] }.toList() }
+        .filter { it.isNotEmpty() }
+
+      if (lines.isEmpty()) throw IllegalArgumentException("No [ ] tokens found")
+
+      val sb = StringBuilder()
+      for (i in lines.indices step 2) {
+        if (i + 1 >= lines.size) continue
+        val fr = lines[i].toMutableList()
+        val en = lines[i + 1].toMutableList()
+        val maxLen = maxOf(fr.size, en.size)
+        while (fr.size < maxLen) fr.add("")
+        while (en.size < maxLen) en.add("")
+
+        val colWidths = (0 until maxLen).map { idx ->
+          maxOf(fr[idx].length, en[idx].length)
+        }
+
+        val frLine = fr.mapIndexed { idx, word -> "[${word.padEnd(colWidths[idx])}]" }
+          .joinToString(" ", prefix = "🇫🇷 ")
+        val enLine = en.mapIndexed { idx, word -> "[${word.padEnd(colWidths[idx])}]" }
+          .joinToString(" ", prefix = "🇬🇧 ")
+
+        sb.appendLine(frLine)
+        sb.appendLine(enLine)
+        sb.appendLine()
+      }
+      return sb.toString()
+    }
+
+    fun String.normalizeLength(): Int =
+      java.text.Normalizer.normalize(this, java.text.Normalizer.Form.NFKD).length
+
     override fun onQuoteClicked(messageRecord: MmsMessageRecord) {
       val quote: Quote? = messageRecord.quote
       if (quote == null) {

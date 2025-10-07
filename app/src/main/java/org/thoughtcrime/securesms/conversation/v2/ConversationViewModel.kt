@@ -445,6 +445,14 @@ class ConversationViewModel(
       }
       .addTo(disposables)
   }
+  fun getRecipientTranslationLanguage(): String? {
+    return recipientSnapshot?.let{repository.getTranslationLanguage(it.id)}
+  }
+  fun setRecipientTranslationLanguage(language: String?) {
+    val recipientId = recipientSnapshot!!.id
+    repository.setTranslationLanguage(recipientId, language)
+
+  }
 
   fun getContactPhotoIcon(context: Context, requestManager: RequestManager): Single<ShortcutInfoCompat> {
     return recipient.firstOrError().flatMap {

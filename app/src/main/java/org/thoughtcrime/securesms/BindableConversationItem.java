@@ -100,6 +100,7 @@ public interface BindableConversationItem extends Unbindable, GiphyMp4Playable, 
     void onUnregisterVoiceNoteCallbacks(@NonNull Observer<VoiceNotePlaybackState> onPlaybackStartObserver);
     void onVoiceNotePause(@NonNull Uri uri);
     void onVoiceNotePlay(@NonNull Uri uri, long messageId, double position);
+    void onTranslateClicked(@NonNull ConversationMessage conversationMessage);
 
     default void onSingleVoiceNotePlay(@NonNull Uri uri, long messageId, double position) {
       onVoiceNotePlay(uri, messageId, position);

@@ -174,6 +174,7 @@ open class RecipientTable(context: Context, databaseHelper: SignalDatabase) : Da
     const val STORAGE_SERVICE_PROTO = "storage_service_proto"
     const val MENTION_SETTING = "mention_setting"
     const val CAPABILITIES = "capabilities"
+    const val TRANSLATION_LANGUAGE = "translation_language"
     const val LAST_SESSION_RESET = "last_session_reset"
     const val WALLPAPER = "wallpaper"
     const val WALLPAPER_URI = "wallpaper_uri"
@@ -247,6 +248,7 @@ open class RecipientTable(context: Context, databaseHelper: SignalDatabase) : Da
         $STORAGE_SERVICE_PROTO TEXT DEFAULT NULL,
         $MENTION_SETTING INTEGER DEFAULT ${MentionSetting.ALWAYS_NOTIFY.id}, 
         $CAPABILITIES INTEGER DEFAULT 0,
+        $TRANSLATION_LANGUAGE TEXT DEFAULT NULL,
         $LAST_SESSION_RESET BLOB DEFAULT NULL,
         $WALLPAPER BLOB DEFAULT NULL,
         $WALLPAPER_URI TEXT DEFAULT NULL,
@@ -1570,6 +1572,23 @@ open class RecipientTable(context: Context, databaseHelper: SignalDatabase) : Da
     if (update(id, values)) {
       AppDependencies.databaseObserver.notifyRecipientChanged(id)
     }
+  }
+  fun setTranslationLanguage (id: RecipientId, language: String?) {
+    val values = ContentValues(1).apply {
+      put(TRANSLATION_LANGUAGE, language)
+    }
+    if (update(id, values)) {
+      Log.d(TAG, "Set translation language for $id to $language")
+      AppDependencies.databaseObserver.notifyRecipientChanged(id)
+    }
+  }
+  fun getTranslationLanguage (id: RecipientId): String? {
+    readableDatabase.query(TABLE_NAME, arrayOf(TRANSLATION_LANGUAGE), ID_WHERE, SqlUtil.buildArgs(id), null, null, null).use { cursor ->
+      if (cursor.moveToFirst()) {
+        return cursor.requireString(TRANSLATION_LANGUAGE)
+      }
+    }
+    return null
   }
 
   fun setLastSessionResetTime(id: RecipientId, lastResetTime: DeviceLastResetTime) {
