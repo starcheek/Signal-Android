@@ -365,6 +365,32 @@ private fun AppSettingsContent(
         }
 
         item {
+          val context = LocalContext.current
+
+          val sharedPref = context.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
+          Rows.TextRow(
+            text = ("Translation api key"),//todo
+            icon = painterResource(R.drawable.ic_translate),
+            label = sharedPref.getString("translation_api_key", null) ?: "Not set",
+            onClick = {
+              val inputEditText = android.widget.EditText(context)
+              androidx.appcompat.app.AlertDialog.Builder(context)
+                .setTitle("Enter api key")
+                .setView(inputEditText)
+                .setPositiveButton("OK") { _, _ ->
+                  val input = inputEditText.text.toString()
+                  sharedPref
+                    .edit()
+                    .putString("translation_api_key", input)
+                    .apply()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+            },
+
+            )
+        }
+        item {
           Rows.TextRow(
             text = stringResource(R.string.preferences_chats__chats),
             icon = painterResource(R.drawable.symbol_chat_24),
