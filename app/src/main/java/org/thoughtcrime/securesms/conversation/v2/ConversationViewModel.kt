@@ -451,7 +451,6 @@ class ConversationViewModel(
   fun setRecipientTranslationLanguage(language: String?) {
     val recipientId = recipientSnapshot!!.id
     repository.setTranslationLanguage(recipientId, language)
-
   }
 
   fun getContactPhotoIcon(context: Context, requestManager: RequestManager): Single<ShortcutInfoCompat> {

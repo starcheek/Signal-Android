@@ -114,6 +114,7 @@ import org.thoughtcrime.securesms.LoggingFragment
 import org.thoughtcrime.securesms.MainActivity
 import org.thoughtcrime.securesms.MuteDialog
 import org.thoughtcrime.securesms.R
+import org.thoughtcrime.securesms.Translation
 import org.thoughtcrime.securesms.attachments.AttachmentSaver
 import org.thoughtcrime.securesms.audio.AudioRecorder
 import org.thoughtcrime.securesms.badges.gifts.OpenableGift
@@ -985,7 +986,9 @@ class ConversationFragment :
     menuProvider?.afterFirstRenderMode = true
 
     viewLifecycleOwner.lifecycle.addObserver(LastScrolledPositionUpdater(adapter, layoutManager, viewModel))
-
+    Translation.translationLangStateFlow.observe(viewLifecycleOwner){
+      adapter.setTranslationLanguage(it,requireContext())
+    }
     disposables += viewModel.recipient
       .observeOn(AndroidSchedulers.mainThread())
       .distinctUntilChanged { r1, r2 -> r1 === r2 || r1.hasSameContent(r2) }

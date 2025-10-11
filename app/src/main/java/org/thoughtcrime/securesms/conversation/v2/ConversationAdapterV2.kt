@@ -13,7 +13,6 @@ import android.view.GestureDetector.SimpleOnGestureListener
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.core.view.children
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.LifecycleOwner
@@ -23,7 +22,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.RequestManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
 import org.json.JSONObject
 import org.signal.core.util.logging.Log
 import org.signal.core.util.toOptional
@@ -71,9 +69,6 @@ import org.thoughtcrime.securesms.util.ProjectionList
 import org.thoughtcrime.securesms.util.SignalE164Util
 import org.thoughtcrime.securesms.util.adapter.mapping.MappingViewHolder
 import org.thoughtcrime.securesms.util.adapter.mapping.PagingMappingAdapter
-import java.io.OutputStreamWriter
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.Locale
 import java.util.Optional
 
@@ -176,10 +171,10 @@ class ConversationAdapterV2 constructor(
     // Use ttsContext instead of adapterContext
     textToSpeech = TextToSpeech(context) { status ->
       if (status == TextToSpeech.SUCCESS) {
-        textToSpeech?.language = Locale.FRENCH
-        val frenchVoice = textToSpeech?.voices?.firstOrNull { it.name.contains("fr-FR") }
-        if (frenchVoice != null) {
-          textToSpeech?.voice = frenchVoice
+        textToSpeech?.language = translationLanguage
+        val voice = textToSpeech?.voices?.firstOrNull { it.name.contains(translationLanguage.language) }
+        if (voice != null) {
+          textToSpeech?.voice = voice
         }
         textToSpeech?.setSpeechRate(1f)
       }

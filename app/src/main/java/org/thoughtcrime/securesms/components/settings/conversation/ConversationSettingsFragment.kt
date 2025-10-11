@@ -39,6 +39,7 @@ import org.thoughtcrime.securesms.BlockUnblockDialog
 import org.thoughtcrime.securesms.MuteDialog
 import org.thoughtcrime.securesms.PushContactSelectionActivity
 import org.thoughtcrime.securesms.R
+import org.thoughtcrime.securesms.Translation
 import org.thoughtcrime.securesms.badges.BadgeImageView
 import org.thoughtcrime.securesms.badges.Badges
 import org.thoughtcrime.securesms.badges.Badges.displayBadges
@@ -70,6 +71,7 @@ import org.thoughtcrime.securesms.contacts.ContactSelectionDisplayMode
 import org.thoughtcrime.securesms.conversation.ConversationIntents
 import org.thoughtcrime.securesms.database.AttachmentTable
 import org.thoughtcrime.securesms.database.SignalDatabase
+import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.groups.GroupId
 import org.thoughtcrime.securesms.groups.ui.GroupErrors
 import org.thoughtcrime.securesms.groups.ui.GroupLimitDialog
@@ -582,14 +584,14 @@ class ConversationSettingsFragment : DSLSettingsFragment(
           summary = DSLSettingsText.from(SignalDatabase.recipients.getTranslationLanguage(state.recipient.id) ?: "None"),
           isEnabled = true,
           onClick = {
-            val languages = arrayOf("France", "Canadian", "English")
-            val languagesCodes = arrayOf("fr", "en-CA", "en")
+
             val current = SignalDatabase.recipients.getTranslationLanguage(state.recipient.id)
-            val checkedItem = languages.indexOf(current)
+            val checkedItem = Translation.languages.indexOf(current)
             MaterialAlertDialogBuilder(requireContext())
               .setTitle("Change translation language to:")
-              .setSingleChoiceItems(languages, checkedItem) { dialog, which ->
-                SignalDatabase.recipients.setTranslationLanguage(state.recipient.id, languagesCodes[which])
+              .setSingleChoiceItems(Translation.languages, checkedItem) { dialog, which ->
+                SignalDatabase.recipients.setTranslationLanguage(state.recipient.id, Translation.languagesCodes[which])
+                AppDependencies.databaseObserver.notifyRecipientChanged(state.recipient.id)
                 dialog.dismiss()
               }
               .setNegativeButton(android.R.string.cancel) { dialog, _ -> dialog.dismiss() }

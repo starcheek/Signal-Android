@@ -11,6 +11,7 @@ import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
 import android.text.SpannableStringBuilder
+import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.graphics.drawable.IconCompat
 import androidx.core.graphics.drawable.toBitmap
@@ -24,6 +25,7 @@ import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.core.SingleEmitter
 import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.signal.core.util.StreamUtil
 import org.signal.core.util.concurrent.MaybeCompat
 import org.signal.core.util.concurrent.SignalExecutors
@@ -277,8 +279,11 @@ class ConversationRepository(
     }.subscribeOn(Schedulers.io())
   }
   fun getTranslationLanguage(recipientId: RecipientId): String? {
-  return  SignalDatabase.recipients.getTranslationLanguage(recipientId)
+    return SignalDatabase.recipients.getTranslationLanguage(recipientId)
+
   }
+
+
   fun setTranslationLanguage(recipientId: RecipientId, language: String?) {
     SignalExecutors.BOUNDED_IO.execute {
       SignalDatabase.recipients.setTranslationLanguage(recipientId, language)

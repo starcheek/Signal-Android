@@ -56,6 +56,7 @@ import org.thoughtcrime.securesms.conversation.colors.ChatColors
 import org.thoughtcrime.securesms.conversation.colors.ChatColors.Companion.forChatColor
 import org.thoughtcrime.securesms.conversation.colors.ChatColors.Id.Companion.forLongValue
 import org.thoughtcrime.securesms.conversation.colors.ChatColorsMapper.getChatColors
+import org.thoughtcrime.securesms.Translation
 import org.thoughtcrime.securesms.crypto.ProfileKeyUtil
 import org.thoughtcrime.securesms.database.GroupTable.LegacyGroupInsertException
 import org.thoughtcrime.securesms.database.GroupTable.ShowAsStoryState
@@ -1574,6 +1575,8 @@ open class RecipientTable(context: Context, databaseHelper: SignalDatabase) : Da
     }
   }
   fun setTranslationLanguage (id: RecipientId, language: String?) {
+    Translation.translationLangStateFlow.postValue(language)
+
     val values = ContentValues(1).apply {
       put(TRANSLATION_LANGUAGE, language)
     }
