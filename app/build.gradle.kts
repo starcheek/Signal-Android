@@ -22,8 +22,8 @@ plugins {
 
 apply(from = "static-ips.gradle.kts")
 
-val canonicalVersionCode = 1593
-val canonicalVersionName = "7.58.1"
+val canonicalVersionCode = 1598
+val canonicalVersionName = "7.60.1"
 val currentHotfixVersion = 0
 val maxHotfixVersions = 100
 
@@ -508,7 +508,6 @@ dependencies {
   implementation(project(":core-ui"))
 
   implementation(libs.androidx.fragment.ktx)
-  implementation(libs.androidx.fragment.compose)
   implementation(libs.androidx.appcompat) {
     version {
       strictly("1.6.1")
