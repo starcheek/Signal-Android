@@ -1575,7 +1575,7 @@ open class RecipientTable(context: Context, databaseHelper: SignalDatabase) : Da
     }
   }
   fun setTranslationLanguage (id: RecipientId, language: String?) {
-    Translation.translationLangStateFlow.postValue(language)
+    Translation.TTS_LangStateFlow.postValue(language)
 
     val values = ContentValues(1).apply {
       put(TRANSLATION_LANGUAGE, language)

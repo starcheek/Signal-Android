@@ -89,11 +89,9 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
-import org.json.JSONObject
 import org.signal.core.util.ByteLimitInputFilter
 import org.signal.core.util.PendingIntentFlags
 import org.signal.core.util.Result
@@ -354,9 +352,6 @@ import org.thoughtcrime.securesms.verify.VerifyIdentityActivity
 import org.thoughtcrime.securesms.wallpaper.ChatWallpaper
 import org.thoughtcrime.securesms.wallpaper.ChatWallpaperDimLevelUtil
 import org.thoughtcrime.securesms.window.WindowSizeClass.Companion.getWindowSizeClass
-import java.io.OutputStreamWriter
-import java.net.HttpURLConnection
-import java.net.URL
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -986,8 +981,8 @@ class ConversationFragment :
     menuProvider?.afterFirstRenderMode = true
 
     viewLifecycleOwner.lifecycle.addObserver(LastScrolledPositionUpdater(adapter, layoutManager, viewModel))
-    Translation.translationLangStateFlow.observe(viewLifecycleOwner){
-      adapter.setTranslationLanguage(it,requireContext())
+    Translation.TTS_LangStateFlow.observe(viewLifecycleOwner) {
+      adapter.setTranslationLanguage(it, requireContext())
     }
     disposables += viewModel.recipient
       .observeOn(AndroidSchedulers.mainThread())
@@ -1663,7 +1658,6 @@ class ConversationFragment :
     }
 
 
-
     val editMessage = inputPanel.editMessage
     if (editMessage == null) {
       Log.w(TAG, "No edit message found, forcing exit")
@@ -1710,7 +1704,7 @@ class ConversationFragment :
       chatColorsDataProvider = viewModel::chatColorsSnapshot,
       displayDialogFragment = { it.show(childFragmentManager, null) }
     )
-    adapter.setTranslationLanguage(viewModel.getRecipientTranslationLanguage(),requireContext())
+    adapter.setTranslationLanguage(viewModel.getRecipientTranslationLanguage(), requireContext())
 
     typingIndicatorAdapter = ConversationTypingIndicatorAdapter(Glide.with(this))
 
@@ -2805,94 +2799,22 @@ class ConversationFragment :
   private inner class ConversationItemClickListener : ConversationAdapter.ItemClickListener {
 
     override fun onTranslateClicked(conversationMessage: ConversationMessage) {
-      val openAiKey = ""
-      val url = URL("https://api.openai.com/v1/responses")
-      val prompt = """
-      You are a bilingual assistant for French learners.
-      Task: Translate a given French sentence into English word-by-word,
-      keeping the French word order, and aligning the output in two rows:
-      - First row: French words separated by a space.
-      - Second row: Corresponding English words, padded with spaces so that they line up under their French counterpart.
-      Rules:
-      - Keep punctuation and numbers in place.
-      - Use the most common, literal meaning of each French word in the given context.
-      - Do not re-order the words to make English grammar correct.
-      - Try to keep each French-English pair vertically aligned for readability.
-      - each line should have the same number of words (max 3 words)
-      
-      Example input:
-      Je pense faire la tarte à la rhubarbe.
-      
-      Example Output:
-      [Je] [pense] [faire] 
-      [I ] [think] [to do] 
-
-      [la ] [tarte] [à]
-      [the] [ pie ] [to]
-     
-      [la ] [rhubarbe]
-      [the] [rhubarb ].
-
-      Input:
-      ${conversationMessage.messageRecord.body}
-      ""
-    """.trimIndent()
-
-      val payload = JSONObject().apply {
-        put("model", "gpt-4o-mini")
-        put("input", prompt)
-        put("store", true)
-      }
 
       lifecycleScope.launch {
-        try {
-          val aligned: String = withContext(Dispatchers.IO) {
-            val conn = (url.openConnection() as HttpURLConnection).apply {
-              requestMethod = "POST"
-              setRequestProperty("Authorization", "Bearer $openAiKey")
-              setRequestProperty("Content-Type", "application/json")
-              doOutput = true
-            }
+        val sharedPref = requireContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+       val openAiKey= sharedPref.getString("translation_api_key", null) ?: return@launch
+        val translationRes = Translation.translateMessage(conversationMessage.messageRecord.body,openAiKey)
+        when (translationRes) {
+          is Translation.TranslateResult.Error -> {
 
-            OutputStreamWriter(conn.outputStream, Charsets.UTF_8).use {
-              it.write(payload.toString())
-            }
-
-            val response = conn.inputStream.bufferedReader().use { it.readText() }
-            val outputText = JSONObject(response)
-              .getJSONArray("output")
-              .getJSONObject(0)
-              .getJSONArray("content")
-              .getJSONObject(0)
-              .getString("text")
-
-            Log.d("Translation", "✅ Translation received: $outputText")
-            outputText
           }
 
-          val safeAligned = try {
-            align(aligned)
-          } catch (e: Exception) {
-            Log.w("Translation", "⚠️ Align failed, falling back to raw text", e)
-            aligned
+          is Translation.TranslateResult.Success -> {
+            SignalDatabase.messages.updateMessageBody(
+              conversationMessage.messageRecord!!.id,
+              translationRes.translatedText
+            )
           }
-
-          // JSON build
-          val jsonToSave = JSONObject().apply {
-            put("random_string", "lshdflkshdfbiu689o3457y") // fixed
-            put("original", conversationMessage.messageRecord!!.body)
-            put("translated", safeAligned)
-          }.toString()
-
-          Log.d("Translation", "✅ JSON built: $jsonToSave")
-
-          SignalDatabase.messages.updateMessageBody(
-            conversationMessage.messageRecord!!.id,
-            jsonToSave
-          )
-
-        } catch (e: Exception) {
-          Log.e("Translation", "❌ Translation failed: ${e.message}", e)
         }
       }
     }
