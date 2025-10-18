@@ -7,6 +7,8 @@ package org.thoughtcrime.securesms.window
 
 import android.content.res.Configuration
 import android.content.res.Resources
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -23,12 +25,9 @@ import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.layout.PaneExpansionState
 import androidx.compose.material3.adaptive.layout.ThreePaneScaffoldScope
-import androidx.compose.material3.adaptive.layout.calculatePaneScaffoldDirective
 import androidx.compose.material3.adaptive.layout.defaultDragHandleSemantics
 import androidx.compose.material3.adaptive.layout.rememberPaneExpansionState
 import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
-import androidx.compose.material3.adaptive.navigation.ThreePaneScaffoldNavigator
-import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -39,12 +38,13 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.window.core.ExperimentalWindowCoreApi
 import androidx.window.core.layout.WindowHeightSizeClass
 import androidx.window.core.layout.WindowWidthSizeClass
+import org.signal.core.ui.compose.AllDevicePreviews
 import org.signal.core.ui.compose.Previews
 import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.main.MainFloatingActionButtonsCallback
@@ -87,6 +87,12 @@ enum class WindowSizeClass(
   EXTENDED_PORTRAIT(Navigation.RAIL),
   EXTENDED_LANDSCAPE(Navigation.RAIL);
 
+  val listPaneDefaultPreferredWidth: Dp
+    get() = if (isExtended()) 416.dp else 316.dp
+
+  val detailPaneMaxContentWidth: Dp = 624.dp
+  val horizontalPartitionDefaultSpacerSize: Dp = 12.dp
+
   fun isCompact(): Boolean = this == COMPACT_PORTRAIT || this == COMPACT_LANDSCAPE
   fun isMedium(): Boolean = this == MEDIUM_PORTRAIT || this == MEDIUM_LANDSCAPE
   fun isExtended(): Boolean = this == EXTENDED_PORTRAIT || this == EXTENDED_LANDSCAPE
@@ -94,8 +100,11 @@ enum class WindowSizeClass(
   fun isLandscape(): Boolean = this == COMPACT_LANDSCAPE || this == MEDIUM_LANDSCAPE || this == EXTENDED_LANDSCAPE
   fun isPortrait(): Boolean = !isLandscape()
 
-  fun isSplitPane(): Boolean {
-    return if (isLargeScreenSupportEnabled() && SignalStore.internal.forceSplitPaneOnCompactLandscape) {
+  @JvmOverloads
+  fun isSplitPane(
+    forceSplitPaneOnCompactLandscape: Boolean = SignalStore.internal.forceSplitPaneOnCompactLandscape
+  ): Boolean {
+    return if (isLargeScreenSupportEnabled() && forceSplitPaneOnCompactLandscape) {
       this != COMPACT_PORTRAIT
     } else {
       this.navigation != Navigation.BAR
@@ -201,20 +210,21 @@ enum class WindowSizeClass(
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 fun AppScaffold(
-  navigator: ThreePaneScaffoldNavigator<Any> = rememberListDetailPaneScaffoldNavigator<Any>(),
-  detailContent: @Composable () -> Unit = {},
+  navigator: AppScaffoldNavigator<Any>,
+  primaryContent: @Composable () -> Unit = {},
   navRailContent: @Composable () -> Unit = {},
   bottomNavContent: @Composable () -> Unit = {},
   paneExpansionState: PaneExpansionState = rememberPaneExpansionState(),
   paneExpansionDragHandle: (@Composable ThreePaneScaffoldScope.(PaneExpansionState) -> Unit)? = null,
-  listContent: @Composable () -> Unit
+  animatorFactory: AppScaffoldAnimationStateFactory = AppScaffoldAnimationStateFactory.Default,
+  secondaryContent: @Composable () -> Unit
 ) {
   val isForcedCompact = WindowSizeClass.checkForcedCompact()
   val windowSizeClass = WindowSizeClass.rememberWindowSizeClass()
 
   if (isForcedCompact) {
     ListAndNavigation(
-      listContent = listContent,
+      listContent = secondaryContent,
       navRailContent = navRailContent,
       bottomNavContent = bottomNavContent,
       windowSizeClass = windowSizeClass
@@ -224,13 +234,25 @@ fun AppScaffold(
   }
 
   val minPaneWidth = navigator.scaffoldDirective.defaultPanePreferredWidth
+  val navigationState = navigator.state
 
   NavigableListDetailPaneScaffold(
     navigator = navigator,
     listPane = {
-      AnimatedPane {
+      val animationState = with(animatorFactory) {
+        this@NavigableListDetailPaneScaffold.getListAnimationState(navigationState)
+      }
+
+      AnimatedPane(
+        enterTransition = EnterTransition.None,
+        exitTransition = ExitTransition.None,
+        modifier = Modifier
+          .zIndex(0f)
+          .then(animationState.parentModifier)
+      ) {
         Box(
           modifier = Modifier
+            .then(animationState.toModifier())
             .clipToBounds()
             .layout { measurable, constraints ->
               val width = max(minPaneWidth.roundToPx(), constraints.maxWidth)
@@ -249,7 +271,7 @@ fun AppScaffold(
             }
         ) {
           ListAndNavigation(
-            listContent = listContent,
+            listContent = secondaryContent,
             navRailContent = navRailContent,
             bottomNavContent = bottomNavContent,
             windowSizeClass = windowSizeClass
@@ -258,9 +280,20 @@ fun AppScaffold(
       }
     },
     detailPane = {
-      AnimatedPane {
+      val animationState = with(animatorFactory) {
+        this@NavigableListDetailPaneScaffold.getDetailAnimationState(navigationState)
+      }
+
+      AnimatedPane(
+        enterTransition = EnterTransition.None,
+        exitTransition = ExitTransition.None,
+        modifier = Modifier
+          .zIndex(1f)
+          .then(animationState.parentModifier)
+      ) {
         Box(
           modifier = Modifier
+            .then(animationState.toModifier())
             .clipToBounds()
             .layout { measurable, constraints ->
               val width = max(minPaneWidth.roundToPx(), constraints.maxWidth)
@@ -279,7 +312,7 @@ fun AppScaffold(
               }
             }
         ) {
-          detailContent()
+          primaryContent()
         }
       }
     },
@@ -317,12 +350,7 @@ private fun ListAndNavigation(
 }
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
-@Preview(device = "spec:width=360dp,height=640dp,orientation=portrait")
-@Preview(device = "spec:width=640dp,height=360dp,orientation=landscape")
-@Preview(device = "spec:width=600dp,height=1024dp,orientation=portrait")
-@Preview(device = "spec:width=1024dp,height=600dp,orientation=landscape")
-@Preview(device = "spec:width=840dp,height=1280dp,orientation=portrait")
-@Preview(device = "spec:width=1280dp,height=840dp,orientation=landscape")
+@AllDevicePreviews
 @Composable
 private fun AppScaffoldPreview() {
   Previews.Preview {
@@ -334,7 +362,7 @@ private fun AppScaffoldPreview() {
         defaultPanePreferredWidth = 416.dp,
         horizontalPartitionSpacerSize = 16.dp
       ),
-      listContent = {
+      secondaryContent = {
         Box(
           contentAlignment = Alignment.Center,
           modifier = Modifier
@@ -347,7 +375,7 @@ private fun AppScaffoldPreview() {
           )
         }
       },
-      detailContent = {
+      primaryContent = {
         Box(
           contentAlignment = Alignment.Center,
           modifier = Modifier
@@ -406,22 +434,4 @@ fun ThreePaneScaffoldScope.AppPaneDragHandle(
         .background(color = Color(0xFF605F5D), RoundedCornerShape(percent = 50))
     )
   }
-}
-
-@OptIn(ExperimentalMaterial3AdaptiveApi::class)
-@Composable
-fun rememberAppScaffoldNavigator(
-  isSplitPane: Boolean,
-  horizontalPartitionSpacerSize: Dp,
-  defaultPanePreferredWidth: Dp
-): ThreePaneScaffoldNavigator<Any> {
-  return rememberListDetailPaneScaffoldNavigator<Any>(
-    scaffoldDirective = calculatePaneScaffoldDirective(
-      currentWindowAdaptiveInfo()
-    ).copy(
-      maxHorizontalPartitions = if (isSplitPane) 2 else 1,
-      horizontalPartitionSpacerSize = horizontalPartitionSpacerSize,
-      defaultPanePreferredWidth = defaultPanePreferredWidth
-    )
-  )
 }

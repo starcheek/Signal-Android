@@ -88,6 +88,8 @@
     <string name="AttachmentKeyboard_file">Plik</string>
     <string name="AttachmentKeyboard_contact">Kontakt</string>
     <string name="AttachmentKeyboard_location">Lokalizacja</string>
+    <!-- Text for a button that will allow users to create a poll -->
+    <string name="AttachmentKeyboard_poll">Ankieta</string>
     <string name="AttachmentKeyboard_Signal_needs_permission_to_show_your_photos_and_videos">Signal potrzebuje pozwolenia, aby pokazać Twoje zdjęcia i filmy</string>
     <!-- Text for a button prompting users to allow Signal access to their gallery storage -->
     <string name="AttachmentKeyboard_allow_access">Zezwól</string>
@@ -904,7 +906,7 @@
     <!-- Bottom sheet paid message -->
     <string name="CreateBackupBottomSheet__depending_on_the_size">W przypadku dużej ilości danych proces tworzenia kopii zapasowej może zająć sporo czasu. Podczas tworzenia kopii zapasowej możesz normalnie korzystać z telefonu.</string>
     <!-- Bottom sheet free message -->
-    <string name="CreateBackupBottomSheet__free_tier">Media is added to your backup as you send and receive messages.</string>
+    <string name="CreateBackupBottomSheet__free_tier">Multimedia będą dodawane do kopii zapasowej przy wysyłaniu i odbieraniu wiadomości.</string>
 
     <!-- Headline text for a bottom sheet dialog shown when the restoration of the media backup fails. -->
     <string name="RestoreMediaFailedBottomSheet__Cant_restore_media">Nie można przywrócić multimediów</string>
@@ -1571,6 +1573,10 @@
     <string name="RemoteRestoreActivity__not_now">Nie teraz</string>
     <!-- Text shown on restore screen as information on what will happen if you skip -->
     <string name="RemoteRestoreActivity__your_media_will_restore_in_the_background">Multimedia zostaną przywrócone w tle. Jeśli nie przywrócisz multimediów teraz, nie będzie można tego zrobić później.</string>
+    <!-- Dialog title -->
+    <string name="RestoreActivity__no_longer_registered_title">This device is no longer registered</string>
+    <!-- Dialog message -->
+    <string name="RestoreActivity__no_longer_registered_message">This is likely because you registered your Signal account on a different device.</string>
 
     <!-- GroupMentionSettingDialog -->
     <string name="GroupMentionSettingDialog_notify_me_for_mentions">Powiadamiaj mnie o wzmiankach</string>
@@ -2227,6 +2233,8 @@
     <string name="MessageRecord_you_unblocked_this_group">Odblokowujesz tę grupę</string>
     <!-- Update message shown when you receive a message that cannot be processed because your Signal version is too old. %1$s is the sender\'s name -->
     <string name="MessageRecord_unsupported_feature">Nie można przetworzyć lub wyświetlić wiadomości, którą przesyła %1$s, ponieważ wykorzystuje ona nową funkcję Signal.</string>
+    <!-- Update message shown when someone ends the poll. %1$s is the person who ended the poll and %2$s is the poll question. -->
+    <string name="MessageRecord_ended_the_poll">%1$s zamyka ankietę: „%2$s”</string>
 
     <!-- MessageRequestBottomView -->
     <string name="MessageRequestBottomView_accept">Zaakceptuj</string>
@@ -3364,6 +3372,8 @@
     <string name="MessageNotifier_reacted_s_to_your_payment">Zareagował(a) tak %1$s na Twoją płatność.</string>
     <string name="MessageNotifier_reacted_s_to_your_sticker">Zareagował(a) tak %1$s na Twoją naklejkę.</string>
     <string name="MessageNotifier_this_message_was_deleted">Ta wiadomość została usunięta.</string>
+    <!-- Body of a notification when someone votes in a poll. First placeholder is the poll emoji, second placeholder is the name of the voter and third is the poll question -->
+    <string name="MessageNotifier_s_voted_in_poll">%1$s %2$s głosuje w ankiecie „%3$s”</string>
 
     <string name="TurnOffContactJoinedNotificationsActivity__turn_off_contact_joined_signal">Nie powiadamiać Cię, gdy ktoś z Twoich kontaktów zacznie korzystać z aplikacji Signal? Możesz z powrotem włączyć te powiadomienia w ustawieniach aplikacji, w sekcji „Powiadomienia”.</string>
 
@@ -4647,6 +4657,8 @@
     <string name="conversation_selection__menu_multi_select">Zaznacz</string>
     <!-- Button to view a in-chat payment message\'s full payment details; Action item with hyphenation. Translation can use soft hyphen - Unicode U+00AD  -->
     <string name="conversation_selection__menu_payment_details">Szczegóły płatności</string>
+    <!-- Button to end a poll -->
+    <string name="conversation_selection__menu_end_poll">Zamknij ankietę</string>
 
     <!-- conversation_expiring_on -->
 
@@ -6188,8 +6200,8 @@
         <item quantity="other">%1$s nie są użytkownikami Signal</item>
     </plurals>
 
-    <!-- ContactFilterView -->
-    <string name="ContactFilterView__search_name_or_number">Wyszukaj imię lub numer</string>
+    <!-- Hint text that shows in the recipient search box when no text is entered yet. -->
+    <string name="ContactFilterView__search_name_or_number">Name, username or number</string>
 
     <!-- VoiceNotePlayerView -->
     <string name="VoiceNotePlayerView__dot_s">· %1$s</string>
@@ -8493,7 +8505,7 @@
     <!-- Subtitle for row for active backup, first placeholder is formatted amount, second is renewal date -->
     <string name="BackupsSettingsFragment_s_month_renews_s">%1$s miesięcznie, kolejna wpłata %2$s</string>
     <!-- Subtitle for row for active backup when price is not available, first placeholder is renewal date -->
-    <string name="BackupsSettingsFragment_renews_s">Przedłużane %1$s</string>
+    <string name="BackupsSettingsFragment_renews_s">Odnowi się %1$s</string>
     <!-- Subtitle for row for active backup, placeholder is last date of backup -->
     <string name="BackupsSettingsFragment_last_backup_s">Ostatnia kopia zapasowa: %1$s</string>
     <!-- Subtitle for row for canceled backup -->
@@ -8546,10 +8558,10 @@
     <string name="RemoteBackupsSettingsFragment__free_tier_storage_title">Rozmiar kopii zapasowej</string>
     <!-- Dialog message for explainer text to on how backup size works for free tier -->
     <plurals name="RemoteBackupsSettingsFragment__backup_frequency_dialog_body">
-        <item quantity="one">Your backup includes all of your text messages and your last %1$d day of media. The size will change as new media is received and old media expires.</item>
-        <item quantity="few">Your backup includes all of your text messages and your last %1$d days of media. The size will change as new media is received and old media expires.</item>
-        <item quantity="many">Your backup includes all of your text messages and your last %1$d days of media. The size will change as new media is received and old media expires.</item>
-        <item quantity="other">Your backup includes all of your text messages and your last %1$d days of media. The size will change as new media is received and old media expires.</item>
+        <item quantity="one">Kopia zapasowa zawiera wszystkie wiadomości tekstowe, a także multimedia z ostatniego dnia. Rozmiar kopii będzie się zmieniać w miarę zapisywania w niej nowych multimediów i wygasania tych starszych.</item>
+        <item quantity="few">Kopia zapasowa zawiera wszystkie wiadomości tekstowe, a także multimedia z ostatnich %1$d dni. Rozmiar kopii będzie się zmieniać w miarę zapisywania w niej nowych multimediów i wygasania tych starszych.</item>
+        <item quantity="many">Kopia zapasowa zawiera wszystkie wiadomości tekstowe, a także multimedia z ostatnich %1$d dni. Rozmiar kopii będzie się zmieniać w miarę zapisywania w niej nowych multimediów i wygasania tych starszych.</item>
+        <item quantity="other">Kopia zapasowa zawiera wszystkie wiadomości tekstowe, a także multimedia z ostatnich %1$d dnia. Rozmiar kopii będzie się zmieniać w miarę zapisywania w niej nowych multimediów i wygasania tych starszych.</item>
     </plurals>
     <!-- Snackbar text displayed when backup has been deleted and turned off -->
     <string name="RemoteBackupsSettingsFragment__backup_deleted_and_turned_off">Kopia zapasowa usunięta i wyłączona.</string>
@@ -8701,7 +8713,7 @@
     <!-- Progress message when backup file is being uploaded. First placeholder and second placeholder are formatted byte sizes (2 MB) and third is percent completion. -->
     <string name="RemoteBackupsSettingsFragment__uploading_s_of_s_d">Przesyłanie: %1$s z %2$s(%3$d%%)</string>
     <!-- Progress message when backup file is being uploaded. Placeholder is percent completion. -->
-    <string name="RemoteBackupsSettingsFragment__uploading_d">Uploading: %1$d%%</string>
+    <string name="RemoteBackupsSettingsFragment__uploading_d">Przesyłanie: %1$d%%</string>
     <!-- Button label to see more details about redemption error -->
     <string name="RemoteBackupsSettingsFragment__details">Szczegóły</string>
     <!-- Text displayed when there was an error deleting backup -->
@@ -8962,6 +8974,12 @@
     <string name="SelectRestoreMethodFragment__from_your_old_phone">Ze starego telefonu</string>
     <!-- Option subtitle for restoring via device transfer -->
     <string name="SelectRestoreMethodFragment__transfer_directly_from_old">Przenieś bezpośrednio ze swojego starego urządzenia z Androidem</string>
+    <!-- Dialog title shown as a warning when skipping restore during registration -->
+    <string name="SelectRestoreMethodFragment__skip_restore_title">Pominąć przywracanie?</string>
+    <!-- Dialog message shown as a warning when skipping restore during registration -->
+    <string name="SelectRestoreMethodFragment__skip_restore_warning">If you skip restore now you will not be able to restore later. If you re-enable backups after skipping restore, your current backup will be replaced with your new messaging history.</string>
+    <!-- Dialog confirm text shown as a warning when skipping restore during registration -->
+    <string name="SelectRestoreMethodFragment__skip_restore">Pomiń przywracanie</string>
 
     <!-- Screen title for restore via local backup -->
     <string name="RestoreLocalBackup_title">Przywróć lokalną kopię zapasową</string>
@@ -9002,6 +9020,10 @@
     <string name="EnterBackupKey_backup_not_found">Nie udało się znaleźć kopii zapasowej</string>
     <!-- Dialog message shown during registration and trying to restore a remote backup -->
     <string name="EnterBackupKey_backup_key_you_entered_is_correct_but_no_backup">Wprowadzony kod odzyskiwania jest poprawny, ale nie została z nim powiązana żadna kopia zapasowa. Jeśli nadal masz swój poprzedni telefon, upewnij się, że włączona jest na nim funkcja tworzenia kopii zapasowych, a kopia zapasowa została utworzona. Następnie spróbuj ponownie.</string>
+    <!-- Dialog message shown during registration and trying to restore a remote backup -->
+    <string name="EnterBackupKey_backup_key_incorrect_or_backups_not_enabled">You may have entered your recovery key incorrectly, or you have not completed at least one backup on your old device.\n\nMake sure you’re registering with the same phone number and recovery key you saved when enabling Signal Secure Backups, and confirm that your old device has completed a backup.</string>
+    <!-- Dialog message shown during registration and trying to restore a remote backup -->
+    <string name="EnterBackupKey_backup_key_check_rate_limited">You have run out of recovery key attempts. For your security, the number of attempts you can make is limited. Wait one hour and try again.</string>
     <!-- Dialog button shown during registration and trying to restore a remote backup to instead skip said backup process -->
     <string name="EnterBackupKey_skip_restore">Pomiń przywracanie</string>
     <!-- Dialog title text when encountering backup restore network error -->
@@ -9133,6 +9155,67 @@
         <item quantity="many">Od %1$d dni nie utworzono kopii zapasowej. Utwórz kopię teraz.</item>
         <item quantity="other">Od %1$d dnia nie utworzono kopii zapasowej. Utwórz kopię teraz.</item>
     </plurals>
+
+    <!-- Polls -->
+    <!-- Caption in poll message to select an option  -->
+    <string name="Poll__select_one">Ankieta · Wybierz jedną opcję</string>
+    <!-- Caption in poll message to select one or more options  -->
+    <string name="Poll__select_multiple">Ankieta · Wybierz jedną lub więcej opcji</string>
+    <!-- Caption in poll message once a poll has ended  -->
+    <string name="Poll__final_results">Ankieta · Wyniki</string>
+    <!-- Caption in poll message that no votes have been cast  -->
+    <string name="Poll__no_votes">Brak głosów</string>
+    <!-- Button in poll message to view current votes for a poll -->
+    <string name="Poll__view_votes">Wyświetl głosy</string>
+    <!-- Button in poll message to view the poll after it has ended -->
+    <string name="Poll__view_poll">Wyświetl ankietę</string>
+    <!-- Toast message shown if we cannot find the poll -->
+    <string name="Poll__unable_poll">Nie znaleziono ankiety</string>
+    <!-- Button in poll message to view results for a poll after it ends -->
+    <string name="Poll__view_results">Wyświetl wyniki</string>
+    <!-- Quote preview when replying to a poll. %1$s is the question of the poll -->
+    <string name="Poll__poll_question">Ankieta: %1$s</string>
+    <!-- Notification message sent when a poll ends. %1$s is the creator. %2$s is the question of the poll -->
+    <string name="Poll__poll_end">%1$s zamyka ankietę: „%2$s”</string>
+    <!-- Notification message sent when someone votes in the poll. %1$s is the voter. %2$s is the question of the poll -->
+    <string name="Poll__poll_voted">%1$s głosuje w ankiecie: „%2$s”</string>
+    <!-- Option in settings to configure notifications for polls -->
+    <string name="Poll__poll">Ankiety</string>
+    <!-- Title of screen that shows the poll results of a poll -->
+    <string name="Poll__poll_results">Wyniki ankiety</string>
+    <!-- Header text displaying the question of the poll -->
+    <string name="Poll__question">Pytanie</string>
+    <!-- Text displaying how many votes, %1$d, an option has gotten -->
+    <plurals name="Poll__num_votes">
+        <item quantity="one">%1$d głos</item>
+        <item quantity="few">%1$d głosy</item>
+        <item quantity="many">%1$d głosów</item>
+        <item quantity="other">%1$d głosu</item>
+    </plurals>
+    <!-- Text that when pressed will end the poll   -->
+    <string name="Poll__end_poll">Zamknij ankietę</string>
+    <!-- Button that once pressed will show all of the voters for a poll -->
+    <string name="Poll__see_all">Wyświetl wszystkich</string>
+    <!-- Header when creating a new poll -->
+    <string name="CreatePollFragment__new_poll">Nowa ankieta</string>
+    <!-- Section text to enter in a question for a poll  -->
+    <string name="CreatePollFragment__question">Pytanie</string>
+    <!-- Hint text for question field when creating a poll  -->
+    <string name="CreatePollFragment__ask_a_question">Zadaj pytanie</string>
+    <!-- Section text to enter in options for a poll -->
+    <string name="CreatePollFragment__options">Opcje</string>
+    <!-- Hint text for the option field, where %1$d is the option number (max 10) -->
+    <string name="CreatePollFragment__option_n">Opcja %1$d</string>
+    <!-- Accessibility label for the polls drag and drop handle used to reorder the list. -->
+    <string name="CreatePollFragment__drag_handle">Ikona funkcji przeciągnij i upuść</string>
+    <!-- Text next to button to allow the poll to allow for multiple votes -->
+    <string name="CreatePollFragment__allow_multiple_votes">Zezwól na wiele odpowiedzi</string>
+    <!-- Snackbar text to add a question and two options before creating a poll -->
+    <string name="CreatePollFragment__add_question_option">Dodaj pytanie i co najmniej 2 opcje</string>
+    <!-- Snackbar text to add two options before creating a poll -->
+    <string name="CreatePollFragment__add_option">Dodaj co najmniej 2 opcje</string>
+    <!-- Snackbar text to add a question before creating a poll -->
+    <string name="CreatePollFragment__add_question">Dodaj pytanie</string>
 
     <!-- EOF -->
 </resources>

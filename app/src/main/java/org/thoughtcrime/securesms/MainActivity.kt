@@ -40,7 +40,6 @@ import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.layout.PaneExpansionAnchor
 import androidx.compose.material3.adaptive.layout.ThreePaneScaffoldRole
 import androidx.compose.material3.adaptive.layout.rememberPaneExpansionState
-import androidx.compose.material3.adaptive.navigation.ThreePaneScaffoldNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -126,6 +125,8 @@ import org.thoughtcrime.securesms.main.callNavGraphBuilder
 import org.thoughtcrime.securesms.main.chatNavGraphBuilder
 import org.thoughtcrime.securesms.main.navigateToDetailLocation
 import org.thoughtcrime.securesms.main.rememberDetailNavHostController
+import org.thoughtcrime.securesms.main.rememberFocusRequester
+import org.thoughtcrime.securesms.main.rememberMainNavigationDetailLocation
 import org.thoughtcrime.securesms.main.storiesNavGraphBuilder
 import org.thoughtcrime.securesms.mediasend.camerax.CameraXUtil
 import org.thoughtcrime.securesms.mediasend.v2.MediaSelectionActivity
@@ -157,8 +158,9 @@ import org.thoughtcrime.securesms.util.Util
 import org.thoughtcrime.securesms.util.viewModel
 import org.thoughtcrime.securesms.window.AppPaneDragHandle
 import org.thoughtcrime.securesms.window.AppScaffold
+import org.thoughtcrime.securesms.window.AppScaffoldNavigator
 import org.thoughtcrime.securesms.window.WindowSizeClass
-import org.thoughtcrime.securesms.window.rememberAppScaffoldNavigator
+import org.thoughtcrime.securesms.window.rememberThreePaneScaffoldNavigatorDelegate
 import org.whispersystems.signalservice.api.websocket.WebSocketConnectionState
 
 class MainActivity : PassphraseRequiredActivity(), VoiceNoteMediaControllerOwner, MainNavigator.NavigatorProvider, Material3OnScrollHelperBinder, ConversationListFragment.Callback, CallLogFragment.Callback {
@@ -320,6 +322,7 @@ class MainActivity : PassphraseRequiredActivity(), VoiceNoteMediaControllerOwner
       val isBackHandlerEnabled = mainToolbarState.destination != MainNavigationListLocation.CHATS
 
       BackHandler(enabled = isBackHandlerEnabled) {
+        mainNavigationViewModel.setFocusedPane(ThreePaneScaffoldRole.Secondary)
         mainNavigationViewModel.goTo(MainNavigationListLocation.CHATS)
       }
 
@@ -353,17 +356,33 @@ class MainActivity : PassphraseRequiredActivity(), VoiceNoteMediaControllerOwner
         )
 
         val mutableInteractionSource = remember { MutableInteractionSource() }
-        val mainNavigationDetailLocation by mainNavigationViewModel.detailLocation.collectAsStateWithLifecycle(mainNavigationViewModel.earlyNavigationDetailLocationRequested ?: MainNavigationDetailLocation.Empty)
+        val mainNavigationDetailLocation by rememberMainNavigationDetailLocation(mainNavigationViewModel)
 
-        val chatsNavHostController = rememberDetailNavHostController {
+        val chatsNavHostController = rememberDetailNavHostController(
+          onRequestFocus = rememberFocusRequester(
+            mainNavigationViewModel = mainNavigationViewModel,
+            currentListLocation = mainNavigationState.currentListLocation,
+            isTargetListLocation = { it in listOf(MainNavigationListLocation.CHATS, MainNavigationListLocation.ARCHIVE) }
+          )
+        ) {
           chatNavGraphBuilder()
         }
 
-        val callsNavHostController = rememberDetailNavHostController {
+        val callsNavHostController = rememberDetailNavHostController(
+          onRequestFocus = rememberFocusRequester(
+            mainNavigationViewModel = mainNavigationViewModel,
+            currentListLocation = mainNavigationState.currentListLocation
+          ) { it == MainNavigationListLocation.CALLS }
+        ) {
           callNavGraphBuilder(it)
         }
 
-        val storiesNavHostController = rememberDetailNavHostController {
+        val storiesNavHostController = rememberDetailNavHostController(
+          onRequestFocus = rememberFocusRequester(
+            mainNavigationViewModel = mainNavigationViewModel,
+            currentListLocation = mainNavigationState.currentListLocation
+          ) { it == MainNavigationListLocation.STORIES }
+        ) {
           storiesNavGraphBuilder()
         }
 
@@ -377,6 +396,7 @@ class MainActivity : PassphraseRequiredActivity(), VoiceNoteMediaControllerOwner
                 MainNavigationListLocation.STORIES -> storiesNavHostController
               }.navigateToDetailLocation(mainNavigationDetailLocation)
             }
+
             is MainNavigationDetailLocation.Chats -> chatsNavHostController.navigateToDetailLocation(mainNavigationDetailLocation)
             is MainNavigationDetailLocation.Calls -> callsNavHostController.navigateToDetailLocation(mainNavigationDetailLocation)
             is MainNavigationDetailLocation.Stories -> storiesNavHostController.navigateToDetailLocation(mainNavigationDetailLocation)
@@ -427,7 +447,7 @@ class MainActivity : PassphraseRequiredActivity(), VoiceNoteMediaControllerOwner
               )
             }
           },
-          listContent = {
+          secondaryContent = {
             val listContainerColor = if (windowSizeClass.isMedium()) {
               SignalTheme.colors.colorSurface1
             } else {
@@ -496,7 +516,7 @@ class MainActivity : PassphraseRequiredActivity(), VoiceNoteMediaControllerOwner
               }
             }
           },
-          detailContent = {
+          primaryContent = {
             when (mainNavigationState.currentListLocation) {
               MainNavigationListLocation.CHATS, MainNavigationListLocation.ARCHIVE -> {
                 DetailsScreenNavHost(
@@ -565,8 +585,8 @@ class MainActivity : PassphraseRequiredActivity(), VoiceNoteMediaControllerOwner
     windowSizeClass: WindowSizeClass,
     contentLayoutData: MainContentLayoutData,
     maxWidth: Dp
-  ): ThreePaneScaffoldNavigator<Any> {
-    val scaffoldNavigator = rememberAppScaffoldNavigator(
+  ): AppScaffoldNavigator<Any> {
+    val scaffoldNavigator = rememberThreePaneScaffoldNavigatorDelegate(
       isSplitPane = windowSizeClass.isSplitPane(),
       horizontalPartitionSpacerSize = contentLayoutData.partitionWidth,
       defaultPanePreferredWidth = contentLayoutData.rememberDefaultPanePreferredWidth(maxWidth)
