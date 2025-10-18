@@ -2425,6 +2425,7 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
     }
 
     @Override public void onTranslateClicked(@NonNull ConversationMessage conversationMessage) {
+      Log.d(TAG, "onTranslateClicked");
       if ( eventListener != null) eventListener.onTranslateClicked(conversationMessage);
     }
   }

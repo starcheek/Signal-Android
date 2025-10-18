@@ -2799,11 +2799,24 @@ class ConversationFragment :
   private inner class ConversationItemClickListener : ConversationAdapter.ItemClickListener {
 
     override fun onTranslateClicked(conversationMessage: ConversationMessage) {
+      Log.d(TAG, "onTranslateClicked: Translating message id=${conversationMessage.messageRecord.id}")
 
       lifecycleScope.launch {
         val sharedPref = requireContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-       val openAiKey= sharedPref.getString("translation_api_key", null) ?: return@launch
-        val translationRes = Translation.translateMessage(conversationMessage.messageRecord.body,openAiKey)
+        val openAiKey = sharedPref.getString("translation_api_key", null)
+        if (openAiKey == null || openAiKey.isEmpty()) {
+          Toast.makeText(requireContext(), "Please set OpenAI API key in settings", Toast.LENGTH_LONG).show()
+          return@launch
+        }
+        val lang =  viewModel.recipientSnapshot?.id?.let {  SignalDatabase.recipients.getTranslationLanguage(it)}
+
+
+        if (lang == null || lang.isEmpty()) {
+          Toast.makeText(requireContext(), "Please select target language in the chat settings", Toast.LENGTH_LONG).show()
+          return@launch
+        }
+        Translation.isLoading.value=conversationMessage.messageRecord.originalMessageId
+        val translationRes = Translation.translateMessage(conversationMessage.messageRecord.body, openAiKey, lang)
         when (translationRes) {
           is Translation.TranslateResult.Error -> {
 
@@ -2816,6 +2829,7 @@ class ConversationFragment :
             )
           }
         }
+        Translation.isLoading.value=null
       }
     }
 

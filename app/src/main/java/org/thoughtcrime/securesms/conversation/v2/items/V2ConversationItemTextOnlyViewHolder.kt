@@ -35,6 +35,7 @@ import org.signal.core.util.StringUtil
 import org.signal.core.util.dp
 import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.R
+import org.thoughtcrime.securesms.Translation
 import org.thoughtcrime.securesms.components.mention.MentionAnnotation
 import org.thoughtcrime.securesms.conversation.BodyBubbleLayoutTransition
 import org.thoughtcrime.securesms.conversation.ConversationAdapterBridge
@@ -152,6 +153,14 @@ open class V2ConversationItemTextOnlyViewHolder<Model : MappingModel<Model>>(
     }
 
     binding.root.onDispatchTouchEventListener = dispatchTouchEventListener
+    coroutineScope.launch {
+      Translation.isLoading.collect {id->
+        if ( ::conversationMessage.isInitialized && conversationMessage.messageRecord.originalMessageId == id)
+          binding.translateButton?.setImageResource(R.drawable.symbol_switch_24)
+        else
+          binding.translateButton?.setImageResource(R.drawable.ic_translate)
+      }
+    }
 
     binding.body.setOnTouchListener { _, event -> gestureDetector.onTouchEvent(event) }
     binding.root.setOnTouchListener { _, event -> gestureDetector.onTouchEvent(event) }

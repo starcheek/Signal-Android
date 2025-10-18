@@ -210,28 +210,33 @@
         app:rcv_outgoing="false" />
 
     <!-- TTS Speak Button -->
+
     <ImageButton
         android:id="@+id/tts_speak_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/ic_translate"
         android:layout_marginLeft="16dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:padding="8dp"
-        app:layout_constraintEnd_toStartOf="@id/translate_button"
         android:clickable="true"
-        android:focusable="true" />
+        android:focusable="true"
+        android:padding="8dp"
+        android:src="@drawable/ic_speak_out"
+        app:layout_constraintBottom_toBottomOf="@id/conversation_item_body_wrapper"
+        app:layout_constraintEnd_toStartOf="@id/translate_button"
+        app:layout_constraintTop_toTopOf="@id/conversation_item_body_wrapper" />
 
     <ImageButton
         android:id="@+id/translate_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/ic_speak_out"
+        android:layout_marginEnd="8dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginEnd="16dp"
-        android:padding="8dp"
         android:clickable="true"
-        android:focusable="true" />
+        android:focusable="true"
+        android:padding="8dp"
+        android:src="@drawable/ic_translate"
+        app:layout_constraintBottom_toBottomOf="@id/conversation_item_body_wrapper"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/conversation_item_body_wrapper" />
 
 </org.thoughtcrime.securesms.conversation.v2.items.V2ConversationItemLayout>
