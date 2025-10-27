@@ -186,26 +186,16 @@ class ConversationAdapterV2 constructor(
 
     if (text.isNullOrBlank()) return
 
-    var messageToSpeak = text
-    try {
-      // Try to parse JSON
-      val obj = JSONObject(text)
-      if (obj.has("random_string") && obj.getString("random_string") == "lshdflkshdfbiu689o3457y") {
-        messageToSpeak = obj.optString("original", text)
-        Log.d(TAG, "Extracted original message from JSON: $messageToSpeak")
-      }
-    } catch (e: Exception) {
-      Log.d(TAG, "Not a JSON translation message, using raw text")
+    var messageToSpeak = if(text.contains("[")&&text.contains("]")){
+      text.substringBefore('\n')
+        .map { if (it.isLetter()) it else ' ' }
+        .joinToString("")
+    }else{
+      text
     }
 
-    val commaSeparatedText = messageToSpeak
-      ?.split("\\s+".toRegex())
-      ?.joinToString(" ") { word ->
-        if (word.lastOrNull()?.isLetterOrDigit() == true) "$word," else word
-      }
-
-    Log.d(TAG, "Speaking modified message: $commaSeparatedText")
-    textToSpeech?.speak(commaSeparatedText, TextToSpeech.QUEUE_ADD, null, null)
+    Log.d(TAG, "Speaking modified message: $messageToSpeak")
+    textToSpeech?.speak(messageToSpeak, TextToSpeech.QUEUE_ADD, null, null)
   }
   fun setTranslationLanguage(lang: String?,context: Context) {
     Log.d(TAG, "setTranslationLanguage called with lang: $lang")
