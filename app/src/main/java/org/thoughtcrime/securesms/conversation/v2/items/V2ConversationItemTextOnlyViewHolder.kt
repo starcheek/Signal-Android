@@ -8,7 +8,6 @@ package org.thoughtcrime.securesms.conversation.v2.items
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.Typeface
-import android.speech.tts.TextToSpeech
 import android.text.Spannable
 import android.text.SpannableString
 import android.text.SpannableStringBuilder
@@ -154,8 +153,8 @@ open class V2ConversationItemTextOnlyViewHolder<Model : MappingModel<Model>>(
 
     binding.root.onDispatchTouchEventListener = dispatchTouchEventListener
     coroutineScope.launch {
-      Translation.isLoading.collect {id->
-        if ( ::conversationMessage.isInitialized && conversationMessage.messageRecord.originalMessageId == id)
+      Translation.isLoading.collect { id ->
+        if (::conversationMessage.isInitialized && conversationMessage.messageRecord.originalMessageId == id)
           binding.translateButton?.setImageResource(R.drawable.symbol_switch_24)
         else
           binding.translateButton?.setImageResource(R.drawable.ic_translate)

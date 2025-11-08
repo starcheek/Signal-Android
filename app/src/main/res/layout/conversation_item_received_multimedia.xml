@@ -300,12 +300,13 @@
         android:visibility="gone"/>
 
     <FrameLayout
+        android:id="@+id/frameLayout2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignEnd="@id/body_bubble"
         android:layout_alignTop="@id/body_bubble"
+        android:layout_alignEnd="@id/body_bubble"
         android:layout_alignBottom="@id/body_bubble"
-        android:layout_marginEnd="-42dp" >
+        android:layout_marginEnd="-42dp">
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/quoted_indicator"
@@ -326,8 +327,41 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/body_bubble"
         android:layout_alignStart="@id/body_bubble"
-        android:layout_marginTop="-4dp"
         android:orientation="horizontal"
         app:rcv_outgoing="false" />
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@id/frameLayout2"
+        android:layout_alignParentEnd="true"
+        android:gravity="center_vertical"
+        android:layout_alignBottom="@id/frameLayout2"
+        android:orientation="horizontal">
+    <ImageButton
+        android:id="@+id/tts_speak_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="16dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="true"
+        android:padding="8dp"
+        android:src="@drawable/ic_speak_out"
+
+        />
+
+    <ImageButton
+        android:id="@+id/translate_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="true"
+        android:padding="8dp"
+        android:src="@drawable/ic_translate"
+
+        />
+    </LinearLayout>
 
 </org.thoughtcrime.securesms.conversation.ConversationItem>

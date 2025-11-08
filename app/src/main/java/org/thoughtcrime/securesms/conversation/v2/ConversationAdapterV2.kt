@@ -22,7 +22,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.RequestManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import org.signal.core.util.logging.Log
 import org.signal.core.util.toOptional
 import org.thoughtcrime.securesms.BindableConversationItem
@@ -109,7 +108,7 @@ class ConversationAdapterV2 constructor(
 
   // TextToSpeech instance
   private var textToSpeech: TextToSpeech? = null
-  private var translationLanguage =Locale.FRENCH
+  private var translationLanguage = Locale.FRENCH
 
 
   init {
@@ -122,7 +121,7 @@ class ConversationAdapterV2 constructor(
       ConversationUpdateViewHolder(view)
     }
 
-    if (true) {
+    if (SignalStore.internal.useConversationItemV2Media) {
       registerFactory(OutgoingMedia::class.java) { parent ->
         val view = CachedInflater.from(parent.context).inflate<View>(R.layout.v2_conversation_item_media_outgoing, parent, false)
         V2ConversationItemMediaViewHolder(V2ConversationItemMediaOutgoingBinding.bind(view).bridge(), this, action = this::performAction, coroutineScope = lifecycleOwner.lifecycleScope)
@@ -186,18 +185,20 @@ class ConversationAdapterV2 constructor(
 
     if (text.isNullOrBlank()) return
 
-    var messageToSpeak = if(text.contains("[")&&text.contains("]")){
-      text.substringBefore('\n')
-        .map { if (it.isLetter()) it else ' ' }
-        .joinToString("")
-    }else{
+    var messageToSpeak = if (text.contains("[") && text.contains("]")) {
+      text.split('\n')
+        .mapIndexedNotNull { index, c -> if (index % 3 == 0) c.substringAfter(' ') else null }
+        .joinToString("").replace('[',' ').replace(']',' ')
+
+    } else {
       text
     }
 
     Log.d(TAG, "Speaking modified message: $messageToSpeak")
     textToSpeech?.speak(messageToSpeak, TextToSpeech.QUEUE_ADD, null, null)
   }
-  fun setTranslationLanguage(lang: String?,context: Context) {
+
+  fun setTranslationLanguage(lang: String?, context: Context) {
     Log.d(TAG, "setTranslationLanguage called with lang: $lang")
     if (lang.isNullOrBlank()) return
     val locale = Locale(lang)
@@ -206,7 +207,6 @@ class ConversationAdapterV2 constructor(
     translationLanguage = locale
     initializeTextToSpeech(context)
   }
-
 
 
   override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
@@ -465,6 +465,7 @@ class ConversationAdapterV2 constructor(
   private inner class IncomingMediaViewHolder(itemView: View) : ConversationViewHolder<IncomingMedia>(itemView) {
     override fun bind(model: IncomingMedia) {
       bindable.setEventListener(clickListener)
+
 
       if (bindPayloadsIfAvailable()) {
         return

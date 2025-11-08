@@ -258,6 +258,7 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
   private final ViewOnceMessageClickListener    revealableClickListener         = new ViewOnceMessageClickListener();
   private final QuotedIndicatorClickListener    quotedIndicatorClickListener    = new QuotedIndicatorClickListener();
   private final ScheduledIndicatorClickListener scheduledIndicatorClickListener = new ScheduledIndicatorClickListener();
+  private final TTSClickListener                ttsClickListener                = new TTSClickListener();
   private final UrlClickListener                urlClickListener                = new UrlClickListener();
   private final Rect                            thumbnailMaskingRect            = new Rect();
   private final TouchDelegateChangedListener    touchDelegateChangedListener    = new TouchDelegateChangedListener();
@@ -347,7 +348,7 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
     this.quoteView                 = findViewById(R.id.quote_view);
     this.reply                     = findViewById(R.id.reply_icon_wrapper);
     this.replyIcon                 = findViewById(R.id.reply_icon);
-    this.translateButton           = findViewById(R.id.translate_button);
+    this.translateButton    = findViewById(R.id.translate_button);
     this.reactionsView             = findViewById(R.id.reactions_view);
     this.badgeImageView            = findViewById(R.id.badge);
     this.storyReactionLabelWrapper = findViewById(R.id.story_reacted_label_holder);
@@ -359,6 +360,8 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
     this.pollView                  = new Stub<>(findViewById(R.id.poll));
 
     setOnClickListener(new ClickListener(null));
+    if (translateButton!=null)
+    translateButton.setOnClickListener(ttsClickListener);
 
     bodyText.setOnTouchListener(doubleTapEditTouchListener);
     bodyText.setOnLongClickListener(passthroughClickListener);
@@ -2486,6 +2489,16 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
     public void onClick(View view) {
       if (eventListener != null && batchSelected.isEmpty() && messageRecord.isMms() && !((MmsMessageRecord) messageRecord).getLinkPreviews().isEmpty()) {
         eventListener.onLinkPreviewClicked(((MmsMessageRecord) messageRecord).getLinkPreviews().get(0));
+      } else {
+        passthroughClickListener.onClick(view);
+      }
+    }
+  }
+  private class TTSClickListener implements View.OnClickListener {
+    @Override
+    public void onClick(View view) {
+      if (eventListener != null && batchSelected.isEmpty()) {
+        eventListener.onTranslateClicked( (conversationMessage));
       } else {
         passthroughClickListener.onClick(view);
       }
